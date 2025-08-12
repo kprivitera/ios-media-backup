@@ -1,6 +1,6 @@
 import Foundation
 
-struct MediaItem: Codable, Identifiable {
+struct MediaItem: Identifiable, Codable, Hashable {
     let filepath: String
     let id: Int
     let mediaType: String
