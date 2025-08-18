@@ -47,7 +47,10 @@ struct HomeView: View {
                                         .clipShape(RoundedRectangle(cornerRadius: 10))
                                         .padding(.horizontal)
                                         .onTapGesture {
+                                            print("🚀 HomeView: Tapping image, navigating to details for item: \(item.id)")
+                                            print("🚀 HomeView: Current path before append: \(path)")
                                             path.append(.details(item)) // Navigate to details
+                                            print("🚀 HomeView: Path after append: \(path)")
                                         }
                                 case .failure:
                                     Image(systemName: "exclamationmark.triangle")

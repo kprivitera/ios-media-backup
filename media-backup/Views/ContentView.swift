@@ -14,6 +14,26 @@ struct ContentView: View {
         NavigationStack(path: $path) {
             if viewModel.isLoggedIn {
                 HomeView(viewModel: viewModel, path: $path)
+                    .navigationDestination(for: Route.self) { route in
+                        switch route {
+                        case .home:
+                            HomeView(viewModel: viewModel, path: $path)
+                                .onAppear {
+                                    print("📍 ContentView: Navigated to HomeView")
+                                }
+                        case .details(let mediaItem):
+                            DetailsView(mediaItem: mediaItem)
+                                .onAppear {
+                                    print("🎯 ContentView: About to create DetailsView for mediaItem: \(mediaItem.id)")
+                                    print("📍 ContentView: DetailsView appeared for mediaItem: \(mediaItem.id)")
+                                }
+                        default:
+                            EmptyView()
+                                .onAppear {
+                                    print("⚠️ ContentView: Unknown route triggered")
+                                }
+                        }
+                    }
             } else {
                 LoginView(onLoginSuccess: {
                     viewModel.isLoggedIn = true
@@ -21,15 +41,9 @@ struct ContentView: View {
                 .environmentObject(viewModel)
             }
         }
-        .navigationDestination(for: Route.self) { route in
-            switch route {
-            case .home:
-                HomeView(viewModel: viewModel, path: $path)
-            case .details(let mediaItem):
-                DetailsView(mediaItem: mediaItem)
-            default:
-                EmptyView()
-            }
+        .onChange(of: path) { newPath in
+            print("🔄 ContentView: Path changed to: \(newPath)")
+            print("🔄 ContentView: Path count: \(newPath.count)")
         }
     }
 }
