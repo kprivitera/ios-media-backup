@@ -1,10 +1,12 @@
 import SwiftUI
+import PhotosUI
 
 struct HomeView: View {
     @ObservedObject var viewModel: MediaViewModel
     @Binding var path: [Route]
 
     @State private var selectedMonthYear: MonthYear?
+    @State private var selectedItems: [PhotosPickerItem] = []
 
     var body: some View {
         VStack {
@@ -23,6 +25,77 @@ struct HomeView: View {
                     }
                 }
             }
+
+            // Button("Back Up Photos") {
+            //     Task {
+            //         await viewModel.backupPhotos()
+            //     }
+            // }
+            // .padding()
+
+            Button("Back Up All Photos") {
+                Task {
+                    let existingHashes = await viewModel.fetchExistingHashes()
+                    print("🔍 Existing server hashes: \(existingHashes)")
+                    
+                    viewModel.fetchAllImageAssets { assets in
+                        print("Found \(assets.count) images on device")
+                        let lastBackup = viewModel.lastSuccessfulBackup
+                        for (index, asset) in assets.enumerated() {
+                            // Only back up if asset is newer than last backup
+                            let assetDate = asset.modificationDate ?? asset.creationDate
+                            if let lastBackup = lastBackup, let assetDate = assetDate, assetDate <= lastBackup {
+                                print("⏭️ Skipping asset #\(index + 1) — not newer than last backup")
+                                continue
+                            }
+
+                            let options = PHImageRequestOptions()
+                            options.isSynchronous = false
+                            options.deliveryMode = .highQualityFormat
+
+                            PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { data, dataUTI, orientation, info in
+                                guard let imageData = data else {
+                                    print("❌ Failed to get data for asset #\(index + 1)")
+                                    return
+                                }
+
+                                let hash = viewModel.computeHash(for: imageData)
+                                print("🔑 Local hash for asset #\(index + 1): \(hash)")
+
+                                if existingHashes.contains(hash) {
+                                    print("⏭️ Skipping asset #\(index + 1) — already backed up (hash: \(hash.prefix(12))...)")
+                                    return
+                                }
+
+                                print("✅ Uploading asset #\(index + 1): \(imageData.count) bytes (hash: \(hash.prefix(12))...)")
+                                let filename = "\(asset.localIdentifier.replacingOccurrences(of: "/", with: "_")).jpg"
+                                Task {
+                                    await viewModel.uploadImage(imageData, filename: filename)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .padding()
+
+            // PhotosPicker(
+            //     selection: $selectedItems,
+            //     matching: .images,
+            //     photoLibrary: .shared()
+            // ) {
+            //     Text("Back Up Photos")
+            //         .padding()
+            // }
+            // .onChange(of: selectedItems) { newItems in
+            //     for item in newItems {
+            //         Task {
+            //             if let data = try? await item.loadTransferable(type: Data.self) {
+            //                 await viewModel.backupPhotos()
+            //             }
+            //         }
+            //     }
+            // }
 
             if let errorMessage = viewModel.errorMessage {
                 Text(errorMessage)

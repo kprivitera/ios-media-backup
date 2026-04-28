@@ -5,12 +5,14 @@ struct MediaItem: Identifiable, Codable, Hashable {
     let id: Int
     let mediaType: String
     let metadataDate: String
+    let fileHash: String?
     
     enum CodingKeys: String, CodingKey {
         case filepath
         case id
         case mediaType = "media_type"
         case metadataDate = "metadata_date"
+        case fileHash = "file_hash"
     }
 }
 
