@@ -241,7 +241,6 @@ class MediaViewModel: ObservableObject {
                     currentComponents.month = currentMonth + 1
                 }
             }
-        }
         return dateRange
     }
 
